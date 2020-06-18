@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from account.models import Account
+from account.permissions import IsCorrectUser
 from account.serializers import AccountSerializer
 from rest_framework.authtoken.models import Token
 
@@ -11,6 +12,8 @@ from rest_framework.authtoken.models import Token
 class AccountViewSet(ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
+    permission_classes = [IsCorrectUser]
+
 
     @action(detail=False, methods=['POST'])
     def sign_up(self,request):
