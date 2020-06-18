@@ -9,7 +9,12 @@ from account.serializers import AccountSerializer
 from rest_framework.authtoken.models import Token
 
 #계정
-class AccountViewSet(ModelViewSet):
+class AccountViewSet(mixins.CreateModelMixin,
+                   mixins.RetrieveModelMixin,
+                   mixins.UpdateModelMixin,
+                   mixins.DestroyModelMixin,
+                   GenericViewSet):
+
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
     permission_classes = [IsCorrectUser]

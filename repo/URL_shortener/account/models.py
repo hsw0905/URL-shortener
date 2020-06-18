@@ -9,7 +9,7 @@ from rest_framework.response import Response
 class MyAccountManager(BaseUserManager):
 	use_in_migrations = True
 
-	def create_user(self, email, username, password=None):
+	def create_user(self, email, username, password):
 		if not email:
 			raise ValueError('Users must have an email address')
 		elif not username:

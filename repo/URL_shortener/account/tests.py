@@ -1,6 +1,3 @@
-from base64 import encode
-
-from django.contrib.auth.hashers import make_password
 from munch import Munch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -61,10 +58,39 @@ class UserTestCase(APITestCase):
     #계정 정보가 정말 바뀌었는지
     def test_should_update_account(self):
         prev_username = self.testAccount.username
+        prev_password = self.testAccount.password
         self.client.force_authenticate(user=self.testAccount)
-        data = {'email':self.testAccount.email,'username':'newname','password':'1111'}
+        data = {'email':self.testAccount.email,'username':'newname','password':'1112'}
 
         response = self.client.put(f'/api/users/{self.testAccount.id}', data=data)
         user_response = Munch(response.data)
+        print(user_response)
         self.assertTrue(user_response.id)
         self.assertNotEqual(user_response.username, prev_username)
+
+    def test_should_get(self):
+        self.client.force_authenticate(user=self.testAccount)
+
+        response = self.client.get(f'/api/users/{self.testAccount.id}')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user_response = Munch(response.data)
+        self.assertTrue(user_response.id)
+        self.assertEqual(user_response.username, self.testAccount.username)
+        self.assertEqual(user_response.email, self.testAccount.email)
+
+    #URL Hash 값 생성 확인
+    def test_should_create_hash(self):
+        data={"title":"test title", "origin_url":"http://google.com/123/456","owner":self.testAccount.id,}
+        self.client.force_authenticate(user=self.testAccount)
+        response = self.client.post('/api/urls/shorten_url', data=data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        user_response = Munch(response.data)
+        print(user_response)
+        self.assertTrue(user_response.id)
+        self.assertTrue(user_response.converted_value)
+        self.assertEqual(user_response.title, data['title'])
+        self.assertEqual(user_response.owner, data['owner'])
+        self.fail()
