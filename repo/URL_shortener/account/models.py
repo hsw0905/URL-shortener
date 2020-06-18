@@ -1,13 +1,19 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, AbstractUser
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+
 
 class MyAccountManager(BaseUserManager):
+	use_in_migrations = True
+
 	def create_user(self, email, username, password=None):
 		if not email:
 			raise ValueError('Users must have an email address')
-		if not username:
-			raise ValueError('Users must have a username')
+		elif not username:
+			raise ValueError('Users must have an username')
 
 		user = self.model(email=self.normalize_email(email), username=username,)
 		user.set_password(password)
@@ -15,14 +21,14 @@ class MyAccountManager(BaseUserManager):
 		return user
 
 	def create_superuser(self, email, username, password):
-		user = self.create_user(email=self.normalize_email(email), password=password, username=username,)
+		user = self.create_user(email=self.normalize_email(email), username=username, password=password,)
 		user.is_admin = True
 		user.is_staff = True
 		user.is_superuser = True
 		user.save(using=self._db)
 		return user
 
-class Account(AbstractBaseUser):
+class Account(AbstractBaseUser,PermissionsMixin):
 	email = models.EmailField(verbose_name="email", max_length=60, unique=True)
 	username = models.CharField(max_length=30, unique=True)
 	date_joined = models.DateTimeField(verbose_name='date joined', auto_now_add=True)
@@ -34,7 +40,7 @@ class Account(AbstractBaseUser):
 
 
 	USERNAME_FIELD = 'email'
-	REQUIRED_FIELDS = ['username',]
+	REQUIRED_FIELDS = []
 
 	objects = MyAccountManager()
 
@@ -45,6 +51,15 @@ class Account(AbstractBaseUser):
 	def has_perm(self, perm, obj=None):
 		return self.is_admin
 
+	# for permission
 	def has_module_perms(self, app_label):
 		return True
 
+
+
+
+# def create(self, validated_data):
+# 	account = Account(email=validated_data['email'],)
+# 	account.set_password(validated_data['password'])
+# 	account.save()
+# 	return account
