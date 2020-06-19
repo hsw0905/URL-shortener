@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_framework import mixins, status
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from account.models import Account
@@ -17,7 +18,14 @@ class AccountViewSet(mixins.CreateModelMixin,
 
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
-    permission_classes = [IsCorrectUser]
+
+    def get_permissions(self):
+        if self.action in ('sign_up', 'sign_in'):
+            return [AllowAny()]
+        if self.action == 'deactivate':
+            return [IsCorrectUser()]
+
+        return super().get_permissions()
 
 
     @action(detail=False, methods=['POST'])

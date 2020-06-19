@@ -1,3 +1,4 @@
+from django.http import HttpResponsePermanentRedirect, HttpResponseRedirect
 from django.shortcuts import render
 
 # Create your views here.
@@ -13,15 +14,17 @@ class URLViewSet(viewsets.ModelViewSet):
     queryset = URL.objects.all()
     serializer_class = URLSerializer
 
-    # base_url = 'http://localhost:8000'
+
 
     @action(detail=False, methods=['POST'])
     def shorten_url(self,request):
         instance = URL(title=request.data.get('title'),
                        origin_url=request.data.get('origin_url'),
                        owner_id=request.data.get('owner'), )
+        #5글자로 해싱
         instance.generate_hash(4, 6)
         instance.converted_value = "".join(instance.shorten)
+        instance.shorten_url = f"http://127.0.0.1:8000/api/urls/{instance.converted_value}"
         instance.save()
         return Response({"id": instance.id,
                          "origin_url": instance.origin_url,
@@ -30,3 +33,8 @@ class URLViewSet(viewsets.ModelViewSet):
                          "converted_value": instance.converted_value,
                          "owner": instance.owner_id},
                         status=status.HTTP_201_CREATED)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return HttpResponsePermanentRedirect(serializer.data['origin_url'])

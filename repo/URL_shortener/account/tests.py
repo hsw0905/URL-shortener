@@ -64,7 +64,6 @@ class UserTestCase(APITestCase):
 
         response = self.client.put(f'/api/users/{self.testAccount.id}', data=data)
         user_response = Munch(response.data)
-        print(user_response)
         self.assertTrue(user_response.id)
         self.assertNotEqual(user_response.username, prev_username)
 
@@ -79,9 +78,8 @@ class UserTestCase(APITestCase):
         self.assertEqual(user_response.username, self.testAccount.username)
         self.assertEqual(user_response.email, self.testAccount.email)
 
-    #URL Hash 값 생성 확인
-    def test_should_create_hash(self):
-        data={"title":"test title", "origin_url":"http://google.com/123/456","owner":self.testAccount.id,}
+    def test_should_shorten(self):
+        data={"title":"test title", "origin_url":"google.com", "owner":self.testAccount.id,}
         self.client.force_authenticate(user=self.testAccount)
         response = self.client.post('/api/urls/shorten_url', data=data)
 
@@ -93,4 +91,15 @@ class UserTestCase(APITestCase):
         self.assertTrue(user_response.converted_value)
         self.assertEqual(user_response.title, data['title'])
         self.assertEqual(user_response.owner, data['owner'])
+        self.assertEqual(user_response.shorten_url, f"http://127.0.0.1:8000/api/urls/{user_response.converted_value}")
+
+    def test_should_redirect(self):
+        data = {"title": "test title", "origin_url": "google.com", "owner": self.testAccount.id, }
+        self.client.force_authenticate(user=self.testAccount)
+        response = self.client.post('/api/urls/shorten_url', data=data)
+        value= response.data['converted_value']
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.get(f'http://127.0.0.1:8000/api/urls/{value}')
+        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
         self.fail()

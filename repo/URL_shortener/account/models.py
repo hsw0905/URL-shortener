@@ -40,7 +40,7 @@ class Account(AbstractBaseUser,PermissionsMixin):
 
 
 	USERNAME_FIELD = 'email'
-	REQUIRED_FIELDS = []
+	REQUIRED_FIELDS = ['username',]
 
 	objects = MyAccountManager()
 
