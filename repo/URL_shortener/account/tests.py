@@ -2,17 +2,23 @@ from munch import Munch
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
-from .models import Account
+
+from custom_url.models import URL
+from account.models import Account
 from model_bakery import baker
 
 class UserTestCase(APITestCase):
     def setUp(self) -> None:
         #테스트 시작시 계정 1개 생성
-        self.testAccount = Account(email="test@example.com", username="test", password="1111", )
+        self.testAccount = Account.objects.create(email="test@example.com", username="test", password="1111", )
         self.data = {"email": self.testAccount.email, "username":"test", "password": "1111", }
         self.testAccount.set_password(self.testAccount.password)
         self.testAccount.save()
-
+        self.testUrl = URL.objects.create(title="testing",
+                           origin_url="https://www.naver.com",
+                           shorten_url="http://127.0.0.1:8000/api/urls/ABCDE",
+                           converted_value="ABCDE",
+                           owner_id=self.testAccount.id,)
     #유저가 제대로 생성되었는지
     def test_should_create(self):
         data={"email":"newemail@example.com", "username":"newuser","password":"1111" }
@@ -55,10 +61,9 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Account.objects.filter(id = entry.id).exists())
 
-    #계정 정보가 정말 바뀌었는지
+    #TypeError: Object of type Account is not JSON serializable
     def test_should_update_account(self):
         prev_username = self.testAccount.username
-        prev_password = self.testAccount.password
         self.client.force_authenticate(user=self.testAccount)
         data = {'email':self.testAccount.email,'username':'newname','password':'1112'}
 
@@ -66,17 +71,25 @@ class UserTestCase(APITestCase):
         user_response = Munch(response.data)
         self.assertTrue(user_response.id)
         self.assertNotEqual(user_response.username, prev_username)
+        self.fail()
 
+        #TypeError: Object of type Account is not JSON serializable
     def test_should_get(self):
         self.client.force_authenticate(user=self.testAccount)
-
+        # error
         response = self.client.get(f'/api/users/{self.testAccount.id}')
 
+        # not error
+        # response = self.client.get('/api/users/1')
+        print('HERE!!')
+
+        print(self.testAccount.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         user_response = Munch(response.data)
         self.assertTrue(user_response.id)
         self.assertEqual(user_response.username, self.testAccount.username)
         self.assertEqual(user_response.email, self.testAccount.email)
+        self.fail()
 
     def test_should_shorten(self):
         data={"title":"test title", "origin_url":"google.com", "owner":self.testAccount.id,}
@@ -86,7 +99,6 @@ class UserTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         user_response = Munch(response.data)
-        print(user_response)
         self.assertTrue(user_response.id)
         self.assertTrue(user_response.converted_value)
         self.assertEqual(user_response.title, data['title'])
@@ -96,10 +108,14 @@ class UserTestCase(APITestCase):
     def test_should_redirect(self):
         data = {"title": "test title", "origin_url": "google.com", "owner": self.testAccount.id, }
         self.client.force_authenticate(user=self.testAccount)
+        #shorten hash값 생성
         response = self.client.post('/api/urls/shorten_url', data=data)
-        value= response.data['converted_value']
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response = self.client.get(f'http://127.0.0.1:8000/api/urls/{value}')
-        self.assertEqual(response.status_code, status.HTTP_302_FOUND)
+        #retrieve -> redirect 요청
+        response = self.client.get(response.data['shorten_url'])
+        response = self.client.get(self.testUrl.shorten_url)
+        self.assertEqual(response.status_code, status.HTTP_301_MOVED_PERMANENTLY)
+
+    def test_x(self):
+        res = self.client.get('/api/users/1')
         self.fail()

@@ -57,9 +57,3 @@ class Account(AbstractBaseUser,PermissionsMixin):
 
 
 
-
-# def create(self, validated_data):
-# 	account = Account(email=validated_data['email'],)
-# 	account.set_password(validated_data['password'])
-# 	account.save()
-# 	return account
